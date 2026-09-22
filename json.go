@@ -6,6 +6,22 @@ import (
 	"net/http"
 )
 
+func respondWithError(w http.ResponseWriter, statusCode int, msg string) {
+	/*
+		Format the msg into a consistent JSON object
+	*/
+	if statusCode > 499 { // Server side error
+		log.Println("Responding with 5XX error:", msg)
+	}
+	type errResponse struct {
+		Error string `json:"error"`
+	}
+
+	respondWithJSON(w, statusCode, errResponse {
+		Error: msg,
+	})
+}
+
 func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 	/*
 		This function takes in the payload, and 
@@ -25,6 +41,6 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(statusCode)
 	w.Write(data)
 }

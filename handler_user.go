@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/LEZEgit/rss-crawler/internal/auth"
 	"github.com/LEZEgit/rss-crawler/internal/database"
 	"github.com/google/uuid"
 )
@@ -33,26 +34,21 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	respondWithJSON(w, 200, databaseUsertoUser(user)) 
+	respondWithJSON(w, 201, databaseUsertoUser(user)) 
 }
 
 func (apiCfg *apiConfig) handlerGetUserByAPIKey(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		APIKey string `json:"api_key"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-
-	if err := decoder.Decode(&params); err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Error parsing request: %v", err))
-		return
-	}
-
-	user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), params.APIKey)
+	apiKey, err := auth.GetAPIKeyFromRequest(r.Header)
 	if err != nil {
-		respondWithError(w, 400, fmt.Sprintf("Couldn't get user by API key: %v", err))
+		respondWithError(w, 403, fmt.Sprintf("API key error: %v", err))
 		return
 	}
 
-	respondWithJSON(w, 200, databaseUsertoUser(user)) 
+	user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apiKey)
+	if err != nil {
+		respondWithError(w, 404, fmt.Sprintf("User not found: %v", err))
+		return
+	}
+
+	respondWithJSON(w, 200, databaseUsertoUser(user))
 }
